@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ordener</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232f6f5e'/><path d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Login -->
+  <section id="login" class="login" hidden>
+    <div class="login-card">
+      <div class="logo big">O</div>
+      <h1>Ordener</h1>
+      <p class="muted">Brandjes en projecten van lange adem, op één plek.</p>
+      <div id="gsi-button"></div>
+      <p id="login-error" class="error" hidden></p>
+    </div>
+  </section>
+
+  <!-- App -->
+  <div id="app" hidden>
+    <header class="topbar">
+      <div class="brand"><span class="logo">O</span><span>Ordener</span></div>
+      <nav class="tabs" aria-label="Weergaven">
+        <a href="#vandaag" data-tab="vandaag">Vandaag</a>
+        <a href="#taken" data-tab="taken">Taken</a>
+        <a href="#projecten" data-tab="projecten">Projecten</a>
+      </nav>
+      <div class="user">
+        <span id="sync" class="sync" title="Synchronisatie"></span>
+        <button id="logout" class="ghost small" type="button">Uitloggen</button>
+      </div>
+    </header>
+
+    <div id="demo-banner" class="demo-banner" hidden>
+      Demomodus: je data blijft in deze browser. Vul <code>config.js</code> in om met je Google Sheet te verbinden.
+      <button id="demo-reset" class="link" type="button">Demo resetten</button>
+    </div>
+
+    <main class="container">
+      <form id="capture" class="capture" autocomplete="off">
+        <input id="capture-input" type="text" placeholder="Wat moet er gebeuren?  (druk N)" aria-label="Nieuwe taak">
+        <button type="submit" class="primary">Toevoegen</button>
+        <div id="capture-preview" class="capture-preview"></div>
+        <div class="capture-hint muted"><kbd>!</kbd> brandje · <kbd>*</kbd> vandaag · <kbd>#project</kbd> koppelen</div>
+      </form>
+      <div id="view"></div>
+    </main>
+  </div>
+
+  <!-- Taak bewerken -->
+  <dialog id="task-dialog" class="dialog">
+    <form method="dialog" id="task-form">
+      <h2>Taak</h2>
+      <label>Titel <input name="titel" required></label>
+      <div class="row">
+        <label>Soort
+          <select name="type">
+            <option value="taak">Taak</option>
+            <option value="brand">Brandje (nu oplossen)</option>
+          </select>
+        </label>
+        <label>Project <select name="projectId"></select></label>
+      </div>
+      <div class="row">
+        <label>Deadline <input name="deadline" type="date"></label>
+        <label class="check-label"><input name="vandaag" type="checkbox"> Vandaag doen</label>
+      </div>
+      <label>Notitie <textarea name="notitie" rows="4"></textarea></label>
+      <div class="dialog-actions">
+        <button type="button" class="danger ghost" data-act="delete">Verwijderen</button>
+        <span class="spacer"></span>
+        <button value="cancel" class="ghost" formnovalidate>Annuleren</button>
+        <button value="save" class="primary">Opslaan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Project bewerken -->
+  <dialog id="project-dialog" class="dialog">
+    <form method="dialog" id="project-form">
+      <h2>Project</h2>
+      <label>Naam <input name="naam" required></label>
+      <label>Doel <textarea name="doel" rows="2" placeholder="Wanneer is dit project geslaagd?"></textarea></label>
+      <div class="row">
+        <label>Status
+          <select name="status">
+            <option value="actief">Actief</option>
+            <option value="gepauzeerd">Gepauzeerd</option>
+            <option value="afgerond">Afgerond</option>
+          </select>
+        </label>
+        <label>Deadline <input name="deadline" type="date"></label>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="danger ghost" data-act="delete">Verwijderen</button>
+        <span class="spacer"></span>
+        <button value="cancel" class="ghost" formnovalidate>Annuleren</button>
+        <button value="save" class="primary">Opslaan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
