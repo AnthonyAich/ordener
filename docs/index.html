@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ordener</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232f6f5e'/><path d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
   <!-- Login -->
@@ -108,8 +108,9 @@
 
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <script src="config.js"></script>
-  <script src="api.js"></script>
-  <script src="app.js"></script>
+  <!-- verhoog ?v= bij elke wijziging zodat browsers geen oude versie uit de cache halen -->
+  <script src="config.js?v=3"></script>
+  <script src="api.js?v=3"></script>
+  <script src="app.js?v=3"></script>
 </body>
 </html>
