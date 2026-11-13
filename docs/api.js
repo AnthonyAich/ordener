@@ -20,11 +20,16 @@
   async function remote(action, extra) {
     const session = store(TOKEN_KEY);
     // text/plain voorkomt een CORS-preflight, die Apps Script niet ondersteunt
-    const res = await fetch(cfg.API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(Object.assign({ action, token: session && session.token }, extra)),
-    });
+    let res;
+    try {
+      res = await fetch(cfg.API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(Object.assign({ action, token: session && session.token }, extra)),
+      });
+    } catch (e) {
+      throw new ApiError('network');
+    }
     if (!res.ok) throw new ApiError('network');
     const body = await res.json();
     if (body.error) {
@@ -84,9 +89,9 @@
   window.Api = {
     DEMO,
     ApiError,
-    session() { return DEMO ? { email: 'demo', name: 'Demo' } : store(TOKEN_KEY); },
-    async login(idToken) {
-      const data = await remote('login', { idToken });
+    session() { return DEMO ? { token: 'demo' } : store(TOKEN_KEY); },
+    async login(password) {
+      const data = await remote('login', { password });
       store(TOKEN_KEY, data);
       return data;
     },

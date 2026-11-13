@@ -3,11 +3,13 @@
  *
  * Koppel dit script aan een Google Sheet (Extensies > Apps Script) en
  * deploy het als Web app (Uitvoeren als: ik, Toegang: iedereen).
- * De toegang wordt afgeschermd via Google Sign-In + een e-mail-allowlist.
+ * De toegang wordt afgeschermd met een wachtwoord.
  *
- * Script Properties (Projectinstellingen > Scripteigenschappen):
- *   CLIENT_ID       – OAuth Client ID uit Google Cloud (Web application)
- *   ALLOWED_EMAILS  – komma-gescheiden lijst, bv. "jij@gmail.com"
+ * Wachtwoord instellen of wijzigen:
+ *   Projectinstellingen (⚙) > Scripteigenschappen > eigenschap PASSWORD toevoegen
+ *   met je wachtwoord als waarde. Bij de eerste login wordt het gehasht opgeslagen
+ *   (PASSWORD_HASH + PASSWORD_SALT) en wordt PASSWORD automatisch verwijderd.
+ *   Bij een wijziging worden alle bestaande sessies uitgelogd.
  */
 
 const SHEETS = {
@@ -40,9 +42,11 @@ function setup() {
   if (def && def.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(def);
 
   const props = PropertiesService.getScriptProperties();
-  if (!props.getProperty('ALLOWED_EMAILS')) props.setProperty('ALLOWED_EMAILS', Session.getEffectiveUser().getEmail());
-  if (!props.getProperty('CLIENT_ID')) props.setProperty('CLIENT_ID', 'VUL-MIJ-IN.apps.googleusercontent.com');
-  Logger.log('Klaar. Vul CLIENT_ID in bij de Scripteigenschappen en deploy als Web app.');
+  if (!props.getProperty('PASSWORD') && !props.getProperty('PASSWORD_HASH')) {
+    Logger.log('Klaar. Voeg nu de scripteigenschap PASSWORD toe en deploy als Web app.');
+  } else {
+    Logger.log('Klaar. Deploy als Web app.');
+  }
 }
 
 // ---------------------------------------------------------------- http
@@ -59,7 +63,7 @@ function doPost(e) {
     return json_({ error: 'bad_request' });
   }
   try {
-    if (req.action === 'login') return json_({ ok: true, data: login_(req.idToken) });
+    if (req.action === 'login') return json_({ ok: true, data: login_(req.password) });
 
     const user = auth_(req.token);
     if (!user) return json_({ error: 'unauthorized' });
@@ -86,32 +90,60 @@ function json_(obj) {
 
 // ---------------------------------------------------------------- auth
 
-function login_(idToken) {
-  if (!idToken) throw new Error('unauthorized');
+const MAX_FAILS = 5;          // foute pogingen ...
+const LOCK_MINUTES = 15;      // ... binnen dit venster → tijdelijk geblokkeerd
+
+function login_(password) {
+  const cache = CacheService.getScriptCache();
+  const fails = Number(cache.get('login_fails') || 0);
+  if (fails >= MAX_FAILS) throw new Error('locked');
+
   const props = PropertiesService.getScriptProperties();
-  const clientId = props.getProperty('CLIENT_ID');
-  const allowed = (props.getProperty('ALLOWED_EMAILS') || '')
-    .split(',').map(function (s) { return s.trim().toLowerCase(); }).filter(String);
+  adoptNewPassword_(props);
+  const hash = props.getProperty('PASSWORD_HASH');
+  const salt = props.getProperty('PASSWORD_SALT');
+  if (!hash || !salt) throw new Error('no_password');
 
-  const res = UrlFetchApp.fetch(
-    'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(idToken),
-    { muteHttpExceptions: true }
-  );
-  if (res.getResponseCode() !== 200) throw new Error('unauthorized');
-  const info = JSON.parse(res.getContentText());
-  const email = String(info.email || '').toLowerCase();
-  const issOk = info.iss === 'accounts.google.com' || info.iss === 'https://accounts.google.com';
-
-  if (info.aud !== clientId || !issOk || String(info.email_verified) !== 'true' ||
-      Number(info.exp) * 1000 < Date.now() || allowed.indexOf(email) === -1) {
+  if (typeof password !== 'string' || !password || !safeEqual_(hashPassword_(password, salt), hash)) {
+    cache.put('login_fails', String(fails + 1), LOCK_MINUTES * 60);
+    Utilities.sleep(800); // vertraag raden
     throw new Error('forbidden');
   }
+  cache.remove('login_fails');
 
   cleanupSessions_();
   const token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
   const exp = Date.now() + SESSION_DAYS * 864e5;
-  props.setProperty(sessionKey_(token), JSON.stringify({ email: email, exp: exp }));
-  return { token: token, email: email, name: info.name || email, picture: info.picture || '' };
+  props.setProperty(sessionKey_(token), JSON.stringify({ exp: exp }));
+  return { token: token };
+}
+
+/** Zet een (nieuw) PASSWORD uit de scripteigenschappen om naar hash + salt. */
+function adoptNewPassword_(props) {
+  const plain = props.getProperty('PASSWORD');
+  if (!plain) return;
+  const salt = Utilities.getUuid() + Utilities.getUuid();
+  props.setProperty('PASSWORD_SALT', salt);
+  props.setProperty('PASSWORD_HASH', hashPassword_(plain, salt));
+  props.deleteProperty('PASSWORD');
+  // nieuw wachtwoord → alle bestaande sessies ongeldig
+  Object.keys(props.getProperties()).forEach(function (k) {
+    if (k.indexOf('sess_') === 0) props.deleteProperty(k);
+  });
+}
+
+function hashPassword_(password, salt) {
+  const key = Utilities.newBlob(salt).getBytes();
+  let h = Utilities.computeHmacSha256Signature(password, salt);
+  for (let i = 0; i < 1000; i++) h = Utilities.computeHmacSha256Signature(h, key);
+  return Utilities.base64Encode(h);
+}
+
+function safeEqual_(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
 }
 
 function auth_(token) {

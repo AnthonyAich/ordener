@@ -5,7 +5,7 @@ Eén plek voor al je werk: **brandjes** (ad-hoc, nu oplossen) en **projecten van
 - **Frontend**: statische site in `docs/`, gehost op GitHub Pages
 - **Backend**: Google Apps Script (`backend/Code.gs`) als JSON-API
 - **Database**: een Google Sheet met de tabbladen `Projecten` en `Taken`
-- **Login**: Google Sign-In; alleen e-mailadressen in `ALLOWED_EMAILS` komen binnen
+- **Login**: een wachtwoord, dat gehasht in de scripteigenschappen staat; je blijft 30 dagen ingelogd
 
 Zonder configuratie draait de frontend in **demomodus**: je data blijft dan in je browser.
 
@@ -26,25 +26,22 @@ Het **Vandaag**-scherm toont achtereenvolgens:
 4. de volgende stap van elk actief project
 5. de projecten die nog geen volgende stap hebben
 
-## Setup (ongeveer 15 minuten)
+## Setup (ongeveer 10 minuten)
 
 ### 1. Sheet en script
 1. Maak een nieuwe Google Sheet aan, bijvoorbeeld "Ordener DB".
 2. Ga naar **Extensies → Apps Script**, verwijder de voorbeeldcode en plak de inhoud van `backend/Code.gs`.
 3. Kies de functie `setup` en klik op **Uitvoeren**. Geef de gevraagde rechten.
-   Dit maakt de tabbladen aan en zet je eigen e-mailadres in `ALLOWED_EMAILS`.
+   Dit maakt de tabbladen aan.
 
-### 2. Google OAuth Client ID (voor de login)
-1. Ga naar <https://console.cloud.google.com/> en maak een nieuw project aan, bijvoorbeeld "Ordener".
-2. Ga naar **APIs & Services → OAuth consent screen**. Kies *External*, vul een naam en je e-mailadres in en voeg jezelf toe als test user.
-3. Ga naar **APIs & Services → Credentials → Create credentials → OAuth client ID**:
-   - Type: *Web application*
-   - **Authorized JavaScript origins**:
-     - `https://<jouw-github-gebruikersnaam>.github.io`
-     - `http://localhost:8765` (om lokaal te testen)
-4. Kopieer de **Client ID**.
-5. Ga in Apps Script naar **Projectinstellingen (⚙) → Scripteigenschappen** en zet `CLIENT_ID` op die waarde.
-   Wil je extra accounts toelaten? Voeg ze dan komma-gescheiden toe aan `ALLOWED_EMAILS`.
+### 2. Wachtwoord instellen
+1. Ga in Apps Script naar **Projectinstellingen (⚙) → Scripteigenschappen → Scripteigenschap toevoegen**.
+2. Gebruik als eigenschap `PASSWORD` en als waarde je wachtwoord. Kies een lang wachtwoord: de app is publiek bereikbaar.
+3. Bij je eerste login wordt het wachtwoord gehasht opgeslagen (`PASSWORD_HASH` en `PASSWORD_SALT`) en verdwijnt `PASSWORD` vanzelf.
+
+Wil je je wachtwoord wijzigen? Voeg dan opnieuw `PASSWORD` toe. Bij de volgende login wordt het nieuwe wachtwoord actief en worden alle oude sessies uitgelogd.
+
+Na 5 foute pogingen is inloggen 15 minuten geblokkeerd.
 
 ### 3. Script deployen
 1. Klik in Apps Script op **Implementeren → Nieuwe implementatie → Web-app**, met deze instellingen:
@@ -52,12 +49,12 @@ Het **Vandaag**-scherm toont achtereenvolgens:
    - Wie heeft toegang: **Iedereen**
 2. Kopieer de URL die eindigt op `/exec`.
 
-> "Iedereen" is nodig zodat de frontend de API kan bereiken. Elke aanvraag wordt gecontroleerd met een sessietoken dat alleen na een geldige Google-login van een toegelaten account wordt uitgegeven.
+> "Iedereen" is nodig zodat de frontend de API kan bereiken. Elke aanvraag wordt gecontroleerd met een sessietoken dat je alleen krijgt na een login met het juiste wachtwoord.
 
 > Pas je `Code.gs` later aan? Ga dan naar **Implementeren → Implementaties beheren → ✏️ → Versie: Nieuwe versie**. Zo blijft de URL dezelfde.
 
 ### 4. Frontend configureren en publiceren
-1. Vul in `docs/config.js` de `API_URL` (de `/exec`-URL) en de `GOOGLE_CLIENT_ID` in.
+1. Vul in `docs/config.js` de `API_URL` in: dat is de `/exec`-URL.
 2. Zet de map op GitHub:
    ```bash
    git init && git add . && git commit -m "Ordener"
@@ -66,7 +63,7 @@ Het **Vandaag**-scherm toont achtereenvolgens:
 3. Ga op GitHub naar **Settings → Pages**. Kies Source *Deploy from a branch*, branch `main` en map `/docs`.
 4. Na een minuut staat Ordener op `https://<gebruikersnaam>.github.io/ordener/`.
 
-> In `config.js` staan geen geheimen: de Client ID en de script-URL zijn publiek. Je data staat in je Sheet en is alleen bereikbaar na het inloggen.
+> In `config.js` staan geen geheimen: alleen de script-URL. Je data staat in je Sheet en is alleen bereikbaar na het inloggen.
 
 ## Lokaal draaien
 ```bash

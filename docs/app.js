@@ -73,7 +73,6 @@
   function handleError(e) {
     const code = e && e.code;
     if (code === 'unauthorized') { toast('Je sessie is verlopen, log opnieuw in.'); showLogin(); return; }
-    if (code === 'forbidden') { toast('Dit Google-account heeft geen toegang.'); return; }
     toast('Er ging iets mis: ' + ((e && e.message) || e));
     console.error(e);
   }
@@ -460,7 +459,6 @@
     $('#logout').addEventListener('click', async () => {
       await Api.logout();
       if (Api.DEMO) { toast('In demomodus is er niets om uit te loggen.'); return; }
-      if (window.google && google.accounts) google.accounts.id.disableAutoSelect();
       showLogin();
     });
     $('#demo-reset').addEventListener('click', () => {
@@ -480,53 +478,42 @@
   }
 
   // ------------------------------------------------------------ login
-  function loadGsi() {
-    return new Promise((resolve, reject) => {
-      if (window.google && google.accounts) return resolve();
-      const s = document.createElement('script');
-      s.src = 'https://accounts.google.com/gsi/client';
-      s.async = true;
-      s.onload = resolve;
-      s.onerror = () => reject(new Error('Google Sign-In kon niet laden'));
-      document.head.appendChild(s);
-    });
-  }
+  const LOGIN_ERRORS = {
+    forbidden: 'Fout wachtwoord.',
+    locked: 'Te veel foute pogingen. Probeer het over 15 minuten opnieuw.',
+    no_password: 'Er is nog geen wachtwoord ingesteld in het script (scripteigenschap PASSWORD).',
+    network: 'Kan de server niet bereiken. Klopt API_URL in config.js?',
+  };
 
-  async function showLogin() {
+  function showLogin() {
     $('#app').hidden = true;
     $('#login').hidden = false;
-    const errEl = $('#login-error');
-    const cfg = window.ORDENER_CONFIG;
-    if (!cfg.GOOGLE_CLIENT_ID) {
-      errEl.textContent = 'GOOGLE_CLIENT_ID ontbreekt in config.js.';
-      errEl.hidden = false;
-      return;
-    }
-    try {
-      await loadGsi();
-      google.accounts.id.initialize({
-        client_id: cfg.GOOGLE_CLIENT_ID,
-        auto_select: true,
-        callback: async (resp) => {
-          errEl.hidden = true;
-          try {
-            await Api.login(resp.credential);
-            showApp();
-          } catch (e) {
-            errEl.textContent = e.code === 'forbidden'
-              ? 'Dit Google-account staat niet op de lijst met toegelaten accounts.'
-              : 'Inloggen mislukt (' + (e.message || e) + ').';
-            errEl.hidden = false;
-          }
-        },
-      });
-      google.accounts.id.renderButton($('#gsi-button'), { theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with', locale: 'nl' });
-      google.accounts.id.prompt();
-    } catch (e) {
-      errEl.textContent = e.message;
-      errEl.hidden = false;
-    }
+    $('#login-error').hidden = true;
+    const pw = $('#login-password');
+    pw.value = '';
+    pw.focus();
   }
+
+  $('#login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const pw = $('#login-password');
+    const btn = $('#login-form button');
+    const errEl = $('#login-error');
+    errEl.hidden = true;
+    btn.disabled = true;
+    btn.textContent = 'Bezig…';
+    try {
+      await Api.login(pw.value);
+      showApp();
+    } catch (err) {
+      errEl.textContent = LOGIN_ERRORS[err.code] || ('Inloggen mislukt (' + (err.message || err) + ').');
+      errEl.hidden = false;
+      pw.select();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Inloggen';
+    }
+  });
 
   function showApp() {
     $('#login').hidden = true;

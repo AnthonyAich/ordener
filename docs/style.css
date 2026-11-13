@@ -194,6 +194,10 @@ a.chip:hover { color: var(--text); }
 .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px 32px; text-align: center; box-shadow: var(--shadow); width: min(380px, 100%); display: flex; flex-direction: column; align-items: center; }
 .login-card h1 { margin-bottom: 4px; }
 .login-card p { margin: 0 0 24px; }
+.login-form { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.login-form input { font: inherit; font-size: 16px; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; text-align: center; }
+.login-form button { padding: 11px; }
+.login-form button:disabled { opacity: .6; cursor: default; }
 .error { color: var(--late); font-size: 14px; margin-top: 16px !important; }
 
 /* toast */
