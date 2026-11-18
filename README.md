@@ -4,7 +4,7 @@ Eén plek voor al je werk: **brandjes** (ad-hoc, nu oplossen) en **projecten van
 
 - **Frontend**: statische site in `docs/`, gehost op GitHub Pages
 - **Backend**: Google Apps Script (`backend/Code.gs`) als JSON-API
-- **Database**: een Google Sheet met de tabbladen `Projecten` en `Taken`
+- **Database**: een Google Sheet met de tabbladen `Projecten`, `Taken` en `Dagnotities`
 - **Login**: een wachtwoord, dat gehasht in de scripteigenschappen staat; je blijft 30 dagen ingelogd
 
 Zonder configuratie draait de frontend in **demomodus**: je data blijft dan in je browser.
@@ -16,8 +16,9 @@ Zonder configuratie draait de frontend in **demomodus**: je data blijft dan in j
 | `! Server down` | brandje (komt bovenaan bij Vandaag) |
 | `Rapport nalezen *` | meteen voor vandaag inplannen |
 | `Connector testen #datalake` | koppelen aan het project dat met "datalake" begint |
+| `Scope herstellen /hw` | soort werk: Hardware Assistent (`/ip` = Improvement Projects) |
 
-Sneltoetsen: `N` of `/` springt naar het invoerveld, `1` `2` `3` wisselen tussen Vandaag, Taken en Projecten.
+Sneltoetsen: `N` of `/` springt naar het invoerveld, `1` tot `5` wisselen tussen Vandaag, Taken, Projecten, Agenda en Dashboard.
 
 Het **Vandaag**-scherm toont achtereenvolgens:
 1. je brandjes
@@ -25,6 +26,25 @@ Het **Vandaag**-scherm toont achtereenvolgens:
 3. wat sinds een eerdere dag is blijven liggen
 4. de volgende stap van elk actief project
 5. de projecten die nog geen volgende stap hebben
+
+### Soort werk en tijd
+- Elk project krijgt een **soort werk**: *Hardware Assistent* of *Improvement Projects*. De taken van dat project erven die keuze. Een losse taak of een brandje deel je zelf in, met `/hw` of `/ip` of bij het afvinken.
+- Bij het **afvinken** vraagt Ordener hoe lang je eraan gewerkt hebt. Daarvoor zijn er snelknoppen, of je typt zelf iets als `45m`, `1u30` of `2u`. Hier kun je ook het soort werk kiezen of aanpassen.
+- Een fout gemaakt? Open de afgeronde taak. Daar kun je de tijd, het soort werk en de datum van afronden nog aanpassen.
+
+### Agenda
+Per dag zie je automatisch wat je afgerond hebt, gegroepeerd per soort werk, met de totale tijd. Onderaan elke dag kun je een notitie typen, die vanzelf bewaard wordt. Met ‹ › blader je door de weken.
+
+### Dashboard
+- **Periode**: deze week, vorige week, deze maand, vorige maand, dit jaar, of een eigen periode.
+- **Inhoud**:
+  - de totale uren per soort werk, met de procentuele verdeling;
+  - een grafiek per dag, week of maand;
+  - de tijd per project.
+- **Nog aan te vullen**: taken zonder tijd of zonder soort werk. Die tellen pas mee als je ze aanvult.
+- **Delen met je baas**:
+  - **Print / PDF** geeft een nette afdruk van het rapport;
+  - **Exporteer naar Excel** maakt een CSV-bestand dat met Belgische instellingen goed opent in Excel. De dagnotities staan onderaan.
 
 ## Setup (ongeveer 10 minuten)
 
@@ -51,7 +71,7 @@ Na 5 foute pogingen is inloggen 15 minuten geblokkeerd.
 
 > "Iedereen" is nodig zodat de frontend de API kan bereiken. Elke aanvraag wordt gecontroleerd met een sessietoken dat je alleen krijgt na een login met het juiste wachtwoord.
 
-> Pas je `Code.gs` later aan? Ga dan naar **Implementeren → Implementaties beheren → ✏️ → Versie: Nieuwe versie**. Zo blijft de URL dezelfde.
+> Pas je `Code.gs` later aan? Plak dan de nieuwe code, sla op en ga naar **Implementeren → Implementaties beheren → ✏️ → Versie: Nieuwe versie → Implementeren**. Zo blijft de URL dezelfde. Ontbrekende kolommen en tabbladen worden automatisch toegevoegd, en je bestaande data blijft staan.
 
 ### 4. Frontend configureren en publiceren
 1. Vul in `docs/config.js` de `API_URL` in: dat is de `/exec`-URL.
@@ -72,7 +92,8 @@ python3 -m http.server 8765 --directory docs
 Open daarna <http://localhost:8765>.
 
 ## Datamodel
-**Projecten**: `id, naam, doel, status (actief|gepauzeerd|afgerond), deadline, aangemaakt, bijgewerkt`
-**Taken**: `id, titel, type (taak|brand), projectId, status (open|klaar), vandaag (YYYY-MM-DD), deadline, notitie, aangemaakt, afgerond`
+**Projecten**: `id, naam, doel, status (actief|gepauzeerd|afgerond), deadline, aangemaakt, bijgewerkt, werktype (hw|ip)`
+**Taken**: `id, titel, type (taak|brand), projectId, status (open|klaar), vandaag (YYYY-MM-DD), deadline, notitie, aangemaakt, afgerond, werktype (hw|ip, leeg = volgens project), duur (minuten)`
+**Dagnotities**: `id (datum YYYY-MM-DD), notitie, aangemaakt, bijgewerkt`
 
 Je mag de Sheet gerust zelf bekijken of aanpassen. Wijzig alleen de kolomvolgorde in rij 1 niet.

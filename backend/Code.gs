@@ -12,32 +12,29 @@
  *   Bij een wijziging worden alle bestaande sessies uitgelogd.
  */
 
+// Nieuwe kolommen altijd ACHTERAAN toevoegen: bestaande data blijft zo op z'n plaats.
+// werktype: 'hw' = Hardware Assistent, 'ip' = Improvement Projects. duur: minuten.
 const SHEETS = {
-  Projecten: ['id', 'naam', 'doel', 'status', 'deadline', 'aangemaakt', 'bijgewerkt'],
-  Taken: ['id', 'titel', 'type', 'projectId', 'status', 'vandaag', 'deadline', 'notitie', 'aangemaakt', 'afgerond'],
+  Projecten: ['id', 'naam', 'doel', 'status', 'deadline', 'aangemaakt', 'bijgewerkt', 'werktype'],
+  Taken: ['id', 'titel', 'type', 'projectId', 'status', 'vandaag', 'deadline', 'notitie', 'aangemaakt', 'afgerond',
+    'werktype', 'duur'],
+  Dagnotities: ['id', 'notitie', 'aangemaakt', 'bijgewerkt'], // id = datum (YYYY-MM-DD)
 };
 
 const EDITABLE = {
-  Projecten: ['naam', 'doel', 'status', 'deadline'],
-  Taken: ['titel', 'type', 'projectId', 'status', 'vandaag', 'deadline', 'notitie', 'afgerond'],
+  Projecten: ['naam', 'doel', 'status', 'deadline', 'werktype'],
+  Taken: ['titel', 'type', 'projectId', 'status', 'vandaag', 'deadline', 'notitie', 'afgerond', 'werktype', 'duur'],
+  Dagnotities: ['notitie'],
 };
 
 const SESSION_DAYS = 30;
-const DONE_VISIBLE_DAYS = 30; // afgeronde taken ouder dan dit worden niet meer geladen
 
 // ---------------------------------------------------------------- setup
 
-/** Eén keer manueel uitvoeren vanuit de editor. */
+/** Eén keer manueel uitvoeren vanuit de editor. Mag later opnieuw (veilig). */
 function setup() {
   const ss = SpreadsheetApp.getActive();
-  Object.keys(SHEETS).forEach(function (name) {
-    let sh = ss.getSheetByName(name);
-    if (!sh) sh = ss.insertSheet(name);
-    const headers = SHEETS[name];
-    sh.getRange(1, 1, sh.getMaxRows(), headers.length).setNumberFormat('@');
-    sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
-    sh.setFrozenRows(1);
-  });
+  Object.keys(SHEETS).forEach(function (name) { ensureSheet_(name); });
   const def = ss.getSheetByName('Sheet1') || ss.getSheetByName('Blad1');
   if (def && def.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(def);
 
@@ -181,12 +178,11 @@ function cleanupSessions_() {
 
 const ACTIONS = {
   getAll: function () {
-    const cutoff = Date.now() - DONE_VISIBLE_DAYS * 864e5;
+    // Alle taken, ook oude afgeronde: die zijn nodig voor de agenda en het dashboard.
     return {
       projects: readTable_('Projecten'),
-      tasks: readTable_('Taken').filter(function (t) {
-        return t.status !== 'klaar' || !t.afgerond || Date.parse(t.afgerond) > cutoff;
-      }),
+      tasks: readTable_('Taken'),
+      dayNotes: readTable_('Dagnotities'),
     };
   },
   createProject: function (p) { return insert_('Projecten', p, { status: 'actief' }); },
@@ -201,12 +197,38 @@ const ACTIONS = {
   createTask: function (p) { return insert_('Taken', p, { type: 'taak', status: 'open' }); },
   updateTask: function (p) { return update_('Taken', p.id, p); },
   deleteTask: function (p) { return remove_('Taken', p.id); },
+  /** Dagnotitie bewaren (of verwijderen als ze leeg is). */
+  saveDayNote: function (p) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(p.id))) throw new Error('Ongeldige datum');
+    const tekst = String(p.notitie || '');
+    const exists = findRow_('Dagnotities', p.id) !== -1;
+    if (!tekst.trim()) {
+      if (exists) remove_('Dagnotities', p.id);
+      return null;
+    }
+    return exists ? update_('Dagnotities', p.id, { notitie: tekst }) : insert_('Dagnotities', { id: p.id, notitie: tekst }, {});
+  },
 };
 
-function sheet_(name) {
-  const sh = SpreadsheetApp.getActive().getSheetByName(name);
-  if (!sh) throw new Error('Tabblad "' + name + '" ontbreekt – voer setup() uit.');
+/** Maakt een tabblad aan en/of vult ontbrekende kolomkoppen aan (migratie). */
+function ensureSheet_(name) {
+  const ss = SpreadsheetApp.getActive();
+  const headers = SHEETS[name];
+  let sh = ss.getSheetByName(name);
+  if (!sh) sh = ss.insertSheet(name);
+  const current = sh.getRange(1, 1, 1, headers.length).getDisplayValues()[0];
+  if (current.join('|') !== headers.join('|')) {
+    sh.getRange(1, 1, sh.getMaxRows(), headers.length).setNumberFormat('@');
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  }
   return sh;
+}
+
+const sheetCache_ = {};
+function sheet_(name) {
+  if (!sheetCache_[name]) sheetCache_[name] = ensureSheet_(name);
+  return sheetCache_[name];
 }
 
 function readTable_(name) {
@@ -244,6 +266,8 @@ function validId_(id) {
   return typeof id === 'string' && /^[A-Za-z0-9_-]{6,40}$/.test(id);
 }
 
+const hasCol_ = function (name, col) { return SHEETS[name].indexOf(col) !== -1; };
+
 function insert_(name, data, defaults) {
   const now = new Date().toISOString();
   const obj = {};
@@ -252,7 +276,7 @@ function insert_(name, data, defaults) {
   EDITABLE[name].forEach(function (k) { if (data[k] !== undefined) obj[k] = data[k]; });
   obj.id = validId_(data.id) ? data.id : Utilities.getUuid().slice(0, 12);
   obj.aangemaakt = now;
-  if (name === 'Projecten') obj.bijgewerkt = now;
+  if (hasCol_(name, 'bijgewerkt')) obj.bijgewerkt = now;
   if (findRow_(name, obj.id) !== -1) throw new Error('Bestaat al: ' + obj.id);
   sheet_(name).appendRow(SHEETS[name].map(function (h) { return clean_(obj[h]); }));
   return obj;
@@ -268,7 +292,7 @@ function update_(name, id, data) {
   EDITABLE[name].forEach(function (k) {
     if (data[k] !== undefined) values[headers.indexOf(k)] = data[k];
   });
-  if (name === 'Projecten') values[headers.indexOf('bijgewerkt')] = new Date().toISOString();
+  if (hasCol_(name, 'bijgewerkt')) values[headers.indexOf('bijgewerkt')] = new Date().toISOString();
   range.setValues([values.map(clean_)]);
   const o = {};
   headers.forEach(function (h, i) { o[h] = values[i]; });

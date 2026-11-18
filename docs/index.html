@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ordener</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232f6f5e'/><path d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
-  <link rel="stylesheet" href="style.css?v=3">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <!-- Login -->
@@ -30,6 +30,8 @@
         <a href="#vandaag" data-tab="vandaag">Vandaag</a>
         <a href="#taken" data-tab="taken">Taken</a>
         <a href="#projecten" data-tab="projecten">Projecten</a>
+        <a href="#agenda" data-tab="agenda">Agenda</a>
+        <a href="#dashboard" data-tab="dashboard">Dashboard</a>
       </nav>
       <div class="user">
         <span id="sync" class="sync" title="Synchronisatie"></span>
@@ -47,7 +49,7 @@
         <input id="capture-input" type="text" placeholder="Wat moet er gebeuren?  (druk N)" aria-label="Nieuwe taak">
         <button type="submit" class="primary">Toevoegen</button>
         <div id="capture-preview" class="capture-preview"></div>
-        <div class="capture-hint muted"><kbd>!</kbd> brandje · <kbd>*</kbd> vandaag · <kbd>#project</kbd> koppelen</div>
+        <div class="capture-hint muted"><kbd>!</kbd> brandje · <kbd>*</kbd> vandaag · <kbd>#project</kbd> koppelen · <kbd>/hw</kbd> <kbd>/ip</kbd> soort werk</div>
       </form>
       <div id="view"></div>
     </main>
@@ -68,10 +70,15 @@
         <label>Project <select name="projectId"></select></label>
       </div>
       <div class="row">
-        <label>Deadline <input name="deadline" type="date"></label>
-        <label class="check-label"><input name="vandaag" type="checkbox"> Vandaag doen</label>
+        <label>Soort werk <select name="werktype"></select></label>
+        <label>Tijd besteed <input name="duur" placeholder="bv. 45m, 1u30, 2u" autocomplete="off"></label>
       </div>
-      <label>Notitie <textarea name="notitie" rows="4"></textarea></label>
+      <div class="row">
+        <label>Deadline <input name="deadline" type="date"></label>
+        <label class="check-label" data-open-only><input name="vandaag" type="checkbox"> Vandaag doen</label>
+        <label data-done-only>Afgerond op <input name="afgerondOp" type="date"></label>
+      </div>
+      <label>Notitie <textarea name="notitie" rows="3"></textarea></label>
       <div class="dialog-actions">
         <button type="button" class="danger ghost" data-act="delete">Verwijderen</button>
         <span class="spacer"></span>
@@ -97,6 +104,10 @@
         </label>
         <label>Deadline <input name="deadline" type="date"></label>
       </div>
+      <fieldset class="seg-field">
+        <legend>Soort werk <span class="muted">(taken van dit project erven dit)</span></legend>
+        <div class="seg" data-seg="werktype"></div>
+      </fieldset>
       <div class="dialog-actions">
         <button type="button" class="danger ghost" data-act="delete">Verwijderen</button>
         <span class="spacer"></span>
@@ -106,11 +117,43 @@
     </form>
   </dialog>
 
+  <!-- Taak afvinken: tijd + soort werk -->
+  <dialog id="done-dialog" class="dialog">
+    <form method="dialog" id="done-form">
+      <h2>Klaar! ✓</h2>
+      <p class="muted small-text" data-title></p>
+      <fieldset class="seg-field">
+        <legend>Hoe lang heb je eraan gewerkt?</legend>
+        <div class="quick" data-quick>
+          <button type="button" data-min="15">15m</button>
+          <button type="button" data-min="30">30m</button>
+          <button type="button" data-min="60">1u</button>
+          <button type="button" data-min="120">2u</button>
+          <button type="button" data-min="240">½ dag</button>
+          <button type="button" data-min="480">1 dag</button>
+        </div>
+        <input name="duur" placeholder="of typ zelf: 1u30, 45m, 3u" autocomplete="off" aria-label="Tijd besteed">
+        <p class="small-text" data-duur-preview></p>
+      </fieldset>
+      <fieldset class="seg-field">
+        <legend>Soort werk <span class="muted" data-via></span></legend>
+        <div class="seg" data-seg="werktype"></div>
+      </fieldset>
+      <div class="dialog-actions">
+        <button value="cancel" class="ghost" formnovalidate>Annuleren</button>
+        <span class="spacer"></span>
+        <button value="skip" class="ghost" formnovalidate>Zonder tijd</button>
+        <button value="save" class="primary">Afronden</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="tooltip" class="viz-tooltip" role="tooltip" hidden></div>
   <div id="toast" class="toast" role="status" hidden></div>
 
   <!-- verhoog ?v= bij elke wijziging zodat browsers geen oude versie uit de cache halen -->
-  <script src="config.js?v=3"></script>
-  <script src="api.js?v=3"></script>
-  <script src="app.js?v=3"></script>
+  <script src="config.js?v=4"></script>
+  <script src="api.js?v=4"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
