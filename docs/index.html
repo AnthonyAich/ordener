@@ -2,10 +2,19 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Ordener</title>
+  <meta name="description" content="Brandjes en projecten van lange adem, op één plek.">
+  <meta name="theme-color" content="#2f6f5e">
+  <!-- PWA: installeerbaar als app op gsm en computer -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Ordener">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%232f6f5e'/><path d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
   <!-- Login -->
@@ -34,6 +43,9 @@
         <a href="#dashboard" data-tab="dashboard">Dashboard</a>
       </nav>
       <div class="user">
+        <button id="install-btn" class="ghost small install-btn" type="button" hidden title="Ordener als app installeren">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14"/></svg><span>Installeren</span>
+        </button>
         <span id="sync" class="sync" title="Synchronisatie"></span>
         <button id="logout" class="ghost small" type="button">Uitloggen</button>
       </div>
@@ -151,9 +163,9 @@
   <div id="tooltip" class="viz-tooltip" role="tooltip" hidden></div>
   <div id="toast" class="toast" role="status" hidden></div>
 
-  <!-- verhoog ?v= bij elke wijziging zodat browsers geen oude versie uit de cache halen -->
-  <script src="config.js?v=4"></script>
-  <script src="api.js?v=4"></script>
-  <script src="app.js?v=4"></script>
+  <!-- verhoog ?v= (en VERSION in sw.js) bij elke wijziging zodat browsers geen oude versie gebruiken -->
+  <script src="config.js?v=5"></script>
+  <script src="api.js?v=5"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

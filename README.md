@@ -6,6 +6,7 @@ Eén plek voor al je werk: **brandjes** (ad-hoc, nu oplossen) en **projecten van
 - **Backend**: Google Apps Script (`backend/Code.gs`) als JSON-API
 - **Database**: een Google Sheet met de tabbladen `Projecten`, `Taken` en `Dagnotities`
 - **Login**: een wachtwoord, dat gehasht in de scripteigenschappen staat; je blijft 30 dagen ingelogd
+- **Installeerbaar als app** (PWA) op je gsm en je computer
 
 Zonder configuratie draait de frontend in **demomodus**: je data blijft dan in je browser.
 
@@ -45,6 +46,15 @@ Per dag zie je automatisch wat je afgerond hebt, gegroepeerd per soort werk, met
 - **Delen met je baas**:
   - **Print / PDF** geeft een nette afdruk van het rapport;
   - **Exporteer naar Excel** maakt een CSV-bestand dat met Belgische instellingen goed opent in Excel. De dagnotities staan onderaan.
+
+### Als app installeren
+- **iPhone/iPad**: open de site in **Safari** en kies **Deel (□↑) → Zet op beginscherm**.
+- **Android**: open de site in **Chrome** en tik op **Installeren** bovenaan in Ordener, of kies **⋮ → App installeren**.
+- **Computer** (Chrome of Edge): klik op **Installeren** bovenaan in Ordener, of op het installatie-icoontje in de adresbalk.
+
+Een geïnstalleerde Ordener opent in een eigen venster, zonder adresbalk, en start ook op als je geen netwerk hebt. Je data heb je dan wel niet, want die staat in de Google Sheet. Een houd-ingedrukt op het icoon geeft snelkoppelingen naar Vandaag, Agenda en Dashboard.
+
+> **Bij een nieuwe frontend-versie**: verhoog `?v=` in `docs/index.html` en `VERSION` in `docs/sw.js` naar hetzelfde getal. Zo krijgt iedereen meteen de nieuwe versie.
 
 ## Setup (ongeveer 10 minuten)
 

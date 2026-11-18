@@ -361,3 +361,20 @@ a.chip:hover { color: var(--text); }
   .chart .hit { display: none; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ================================================================
+   PWA: installeerknop en veilige zones (notch) in de app-weergave
+   ================================================================ */
+.install-btn { display: inline-flex; align-items: center; gap: 6px; }
+.install-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.topbar { padding-top: max(10px, env(safe-area-inset-top)); padding-left: max(20px, env(safe-area-inset-left)); padding-right: max(20px, env(safe-area-inset-right)); }
+.container { padding-bottom: max(80px, calc(env(safe-area-inset-bottom) + 40px)); }
+.toast { bottom: max(24px, calc(env(safe-area-inset-bottom) + 12px)); }
+@media (display-mode: standalone) {
+  /* als app: geen tekstselectie op knoppen, geen "tik-flits" */
+  button, .tabs a { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+}
+@media (max-width: 640px) {
+  .topbar { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .install-btn span { display: none; }
+}

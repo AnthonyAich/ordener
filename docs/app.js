@@ -1096,9 +1096,43 @@
     load();
   }
 
+  // ============================================================ PWA
+  function setupPwa() {
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || ['localhost', '127.0.0.1'].includes(location.hostname))) {
+      navigator.serviceWorker.register('sw.js').catch((e) => console.warn('Service worker niet geregistreerd', e));
+    }
+    // Installeerknop (Chrome/Edge op Android, Windows, Mac). Op iPhone: Deel → Zet op beginscherm.
+    let deferred = null;
+    const btn = $('#install-btn');
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferred = e;
+      btn.hidden = false;
+    });
+    btn.addEventListener('click', async () => {
+      if (!deferred) return;
+      deferred.prompt();
+      await deferred.userChoice.catch(() => null);
+      deferred = null;
+      btn.hidden = true;
+    });
+    window.addEventListener('appinstalled', () => { btn.hidden = true; toast('Ordener is geïnstalleerd'); });
+
+    // Een geïnstalleerde app blijft vaak lang open: haal verse data op als je ze terug opent.
+    let hiddenAt = 0;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+      const away = Date.now() - hiddenAt > 60 * 1000;
+      const busy = S.pending || document.querySelector('dialog[open]') ||
+        (document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName));
+      if (away && S.loaded && !busy && !$('#app').hidden) load();
+    });
+  }
+
   // ============================================================ boot
   bindEvents();
   bindDialogs();
+  setupPwa();
   if (Api.DEMO || Api.session()) showApp();
   else showLogin();
 })();
